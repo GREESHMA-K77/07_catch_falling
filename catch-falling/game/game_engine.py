@@ -1,12 +1,6 @@
 
 """
 GameEngine: owns the basket and all falling objects.
-
-Starter version: basket movement and spawning both work at a basic
-level (Tasks 2 and 3 ask you to improve them), there's no speed boost
-yet (Task 4 builds it from scratch), and catch detection has two
-known bugs (see game/collision.py and the catch-checking loop below)
-that Task 1 asks you to fix.
 """
 
 import random
@@ -17,7 +11,10 @@ from game.falling_object import FallingObject
 from game.collision import is_caught
 from game.renderer import WIDTH, HEIGHT
 
-SPAWN_INTERVAL_FRAMES = 50
+MIN_SPAWN_INTERVAL = 35
+MAX_SPAWN_INTERVAL = 65
+MAX_OBJECTS_ON_SCREEN = 5
+MIN_SPAWN_DISTANCE = 100
 MAX_MISSES = 5
 
 
@@ -26,12 +23,30 @@ class GameEngine:
         self.basket = Basket(x=WIDTH / 2, y=HEIGHT - 30)
         self.objects = []
         self.frames_until_spawn = 0
+        self.last_spawn_x = None
         self.score = 0
         self.misses = 0
         self.game_over = False
 
     def _spawn_object(self):
-        x = random.randint(20, WIDTH - 20)
+        if len(self.objects) >= MAX_OBJECTS_ON_SCREEN:
+            return
+
+        # Try to choose a location away from the previous spawn.
+        possible_positions = [
+            x for x in range(20, WIDTH - 19)
+            if (
+                self.last_spawn_x is None
+                or abs(x - self.last_spawn_x) >= MIN_SPAWN_DISTANCE
+            )
+        ]
+
+        if not possible_positions:
+            x = random.randint(20, WIDTH - 20)
+        else:
+            x = random.choice(possible_positions)
+
+        self.last_spawn_x = x
         self.objects.append(FallingObject(x=x, y=-14, speed=3))
 
     def handle_input(self, keys_pressed):
@@ -63,7 +78,10 @@ class GameEngine:
 
         if self.frames_until_spawn <= 0:
             self._spawn_object()
-            self.frames_until_spawn = SPAWN_INTERVAL_FRAMES
+            self.frames_until_spawn = random.randint(
+                MIN_SPAWN_INTERVAL,
+                MAX_SPAWN_INTERVAL
+            )
 
         for obj in self.objects:
             obj.update()
