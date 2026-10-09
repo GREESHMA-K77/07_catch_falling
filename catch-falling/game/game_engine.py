@@ -32,7 +32,6 @@ class GameEngine:
         if len(self.objects) >= MAX_OBJECTS_ON_SCREEN:
             return
 
-        # Try to choose a location away from the previous spawn.
         possible_positions = [
             x for x in range(20, WIDTH - 19)
             if (
@@ -69,10 +68,15 @@ class GameEngine:
     def handle_keydown(self, key):
         if self.game_over and key == pygame.K_r:
             self.__init__()
+        elif not self.game_over and key == pygame.K_SPACE:
+            self.basket.activate_boost()
 
     def update(self):
         if self.game_over:
             return
+
+        # Update the temporary basket speed boost.
+        self.basket.update()
 
         self.frames_until_spawn -= 1
 
@@ -119,9 +123,11 @@ class GameEngine:
         from game import renderer
 
         renderer.draw_scene(surface, self.basket, self.objects)
+
         renderer.draw_text(
             surface, font, f"Score: {self.score}", (10, 10)
         )
+
         renderer.draw_text(
             surface, font,
             f"Misses: {self.misses}/{MAX_MISSES}",
@@ -133,4 +139,13 @@ class GameEngine:
                 surface,
                 font,
                 f"Game Over! Final score: {self.score}. Press R to restart."
+            )
+
+        if self.basket.boosted_frames > 0:
+            renderer.draw_text(
+                surface,
+                font,
+                "SPEED BOOST ACTIVE!",
+                (10, 62),
+                (255, 220, 80),
             )
